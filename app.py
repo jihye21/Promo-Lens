@@ -9,8 +9,8 @@ st.set_page_config(
     layout="wide"
 )
 
-st.title("Promo-Lens | 실시간 프로모션 시뮬레이터")
-st.markdown("자연어 조건 및 파라미터를 기반으로 **예상 매출, 필요 트래픽, 마진율 및 고객 반응**을 시뮬레이션합니다.")
+st.title("Promo-Lens | 프로모션 시뮬레이터")
+st.markdown("자연어 조건 및 파라미터를 기반으로 예상 매출, 필요 트래픽, 마진율 및 고객 반응을 시뮬레이션합니다.")
 st.markdown("---")
 
 # 사이드바: 프로모션 조건 설정
@@ -82,8 +82,8 @@ with col_chart2:
     st.subheader("AI 리스크 및 성과 리포트")
     st.info(f"""
     **[Promo-Lens Analysis]**
-    * **타겟 반응**: 선택하신 {discount_rate}% 할인과 {gift_type} 조합은 타겟층의 반응을 이끌어내어 **구매 전환율이 약 {sim_result['predicted_conversion']}%**까지 향상될 것으로 예측됩니다.
-    * **리스크 요인**: 사은품 원가와 할인율의 복합 영향으로 예상 마진율이 **{sim_result['estimated_margin']}%**로 산출되었습니다. 마진 방어를 위해 사은품 대안 검토를 권장합니다.
+    * **타겟 반응**: 선택하신 {discount_rate}% 할인과 {gift_type} 조합은 타겟층의 반응을 이끌어내어 구매 전환율이 약 {sim_result['predicted_conversion']}%까지 향상될 것으로 예측됩니다.
+    * **리스크 요인**: 사은품 원가와 할인율의 복합 영향으로 예상 마진율이 {sim_result['estimated_margin']}%로 산출되었습니다. 마진 방어를 위해 사은품 대안 검토를 권장합니다.
     """)
 
 # 자연어 에이전트 인터페이스
