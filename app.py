@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
+import re
 
 # 페이지 설정
 st.set_page_config(
@@ -9,16 +10,90 @@ st.set_page_config(
     layout="wide"
 )
 
+//세션 상태 초기화
+if "target_category" not in st.session_state:
+    st.session_state.target_category = "겨울 패딩/의류"
+if "discount_rate" not in st.session_state:
+    st.session_state.discount_rate = 7
+if "gift_type" not in st.session_state:
+    st.session_state.gift_type = "고급 보온 병 (단가: 1.5만)"
+if "target_revenue" not in st.session_state:
+    st.session_state.target_revenue = 500
+    
 st.title("Promo-Lens | 프로모션 시뮬레이터")
 st.markdown("자연어 조건 및 파라미터를 기반으로 예상 매출, 필요 트래픽, 마진율 및 고객 반응을 시뮬레이션합니다.")
 st.markdown("---")
 
+st.subheader("자연어 에이전트 인터페이스 (Intent Parser)")
+user_query = st.text_input("마케터 명령 입력", "다음 주 가전 방송에 15% 할인 걸고 사은품은 장갑으로 해줘")
+
+if st.button("에이전트 실행 및 파싱"):
+    query_lower = user_query.lower()
+
+    #카테고리 파싱
+    if "패딩" in query_lower or "의류" in query_lower:
+        st.session_state.target_category = "겨울 패딩/의류"
+    elif "가전" in query_lower:
+        st.session_state.target_category = "프리미엄 가전"
+    elif "뷰티" in query_lower or "화장품" in query_lower:
+        st.session_state.target_category = "뷰티/화장품"
+    elif "신선" in query_lower or "식품" in query_lower: 
+        st.session_state.target_category = "신선식품"
+
+    numbers = re.findall(r'\d+', user_query)
+    if numbers: 
+        parsed_discount = int(numbers[0])
+        if 0 <= parsed_discount <= 30:
+            st.session_state.discount_rate = parsed_discount
+
+    ##사은품 유형 파싱
+    if "없음" in query_lower or "제외" in query_lower:
+        st.session_state.gift_type = "없음"
+    elif "보온병" in query_lower:
+        st.session_state.gift_type = "고급 보온병 (단가: 1.5만)"
+    elif "장갑" in query_lower:
+        st.session_state.gift_type = "겨울 장갑 (단가: 2.0만)"
+    elif "페이백" in query_lower or "적립금" in query_lower:
+        st.session_state.gift_type = "적립금 5천원 페이백"
+        
+    st.success(f"[Intent Parser] 자연어 정형화 ➔ [카테고리: {st.session_state.target_category}, 할인율: {st.session_state.discount_rate}%, 사은품: {st.session_state.gift_type}]")
+
+st.markdown("---")
+
 # 사이드바: 프로모션 조건 설정
-st.sidebar.header("프로모션 조건 설정")
-target_category = st.sidebar.selectbox("상품 카테고리", ["겨울 패딩/의류", "프리미엄 가전", "뷰티/화장품", "신선식품"])
-discount_rate = st.sidebar.slider("카드 즉시 할인율 (%)", min_value=0, max_value=30, value=7, step=1)
-gift_type = st.sidebar.selectbox("증정 사은품 유형", ["없음", "고급 보온병 (단가: 1.5만)", "겨울 장갑 (단가: 2.0만)", "적립금 5천원 페이백"])
-target_revenue = st.sidebar.number_input("목표 매출액 (백만 원)", min_value=50, max_value=5000, value=500, step=50)
+st.sidebar.header("프로모션 조건 설정 (Agent Sync)")
+
+categories = ["겨울 패딩/의류", "프리미엄 가전", "뷰티/화장품", "신선식품"]
+target_category = st.sidebar.selectbox(
+    "상품 카테고리", 
+    categories, 
+    index=categories.index(st.session_state.target_category)
+)
+st.session_state.target_category = target_category
+
+discount_rate = st.sidebar.slider(
+    "카드 즉시 할인율 (%)", 
+    min_value=0, max_value=30, 
+    value=st.session_state.discount_rate, 
+    step=1
+)
+st.session_state.discount_rate = discount_rate
+
+gift_types = ["없음", "고급 보온병 (단가: 1.5만)", "겨울 장갑 (단가: 2.0만)", "적립금 5천원 페이백"]
+gift_type = st.sidebar.selectbox(
+    "증정 사은품 유형", 
+    gift_types, 
+    index=gift_types.index(st.session_state.gift_type)
+)
+st.session_state.gift_type = gift_type
+
+target_revenue = st.sidebar.number_input(
+    "목표 매출액 (백만 원)", 
+    min_value=50, max_value=5000, 
+    value=st.session_state.target_revenue, 
+    step=50
+)
+st.session_state.target_revenue = target_revenue
 
 # 시뮬레이션 백엔드 로직
 def run_simulation(category, discount, gift, goal):
@@ -64,7 +139,6 @@ col_chart1, col_chart2 = st.columns(2)
 
 with col_chart1:
     st.subheader("요일별 예상 매출 추이")
-
     days_order = ['월', '화', '수', '목', '금', '토', '일']
     chart_data = pd.DataFrame({
         '요일': days_order,
@@ -87,15 +161,6 @@ with col_chart2:
     st.subheader("AI 리스크 및 성과 리포트")
     st.info(f"""
     **[Promo-Lens Analysis]**
-    * **타겟 반응**: 선택하신 {discount_rate}% 할인과 {gift_type} 조합은 타겟층의 반응을 이끌어내어 구매 전환율이 약 {sim_result['predicted_conversion']}%까지 향상될 것으로 예측됩니다.
+    * **타겟 반응**: 선택하신 [{target_category}]에 {discount_rate}% 할인과 {gift_type} 조합은 타겟층의 반응을 이끌어내어 구매 전환율이 약 {sim_result['predicted_conversion']}%까지 향상될 것으로 예측됩니다.
     * **리스크 요인**: 사은품 원가와 할인율의 복합 영향으로 예상 마진율이 {sim_result['estimated_margin']}%로 산출되었습니다. 마진 방어를 위해 사은품 대안 검토를 권장합니다.
     """)
-
-# 자연어 에이전트 인터페이스
-st.markdown("---")
-st.subheader("에이전트 자연어 명령 인터페이스")
-user_query = st.text_input("마케터 명령 입력", "다음 주 패딩 방송에 7% 할인 걸고 보온병 주면 어때?")
-
-if st.button("시뮬레이션 실행"):
-    st.success(f"파라미터 파싱 완료: [카테고리: {target_category}, 할인율: {discount_rate}%, 사은품: {gift_type}]")
-    st.write(f"시뮬레이션 결과, 예상 매출은 **{sim_result['predicted_revenue']}백만 원**이며 최적화 계산이 완료되었습니다.")
