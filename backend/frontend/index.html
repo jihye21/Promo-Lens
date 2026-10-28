@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Promo-Lens | 프로모션 시뮬레이터</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet">
+    <style>
+        body { font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f3f5; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+        ::-webkit-scrollbar-thumb:hover { background: #3182F6; }
+        .risk-glow { transition: all 0.4s ease; }
+    </style>
+</head>
+<body id="bodyContainer" class="bg-[#f8f9fa] text-slate-800 antialiased min-h-screen selection:bg-blue-100 selection:text-blue-700 pb-20 risk-glow">
+    
+    <!-- Top Navigation -->
+    <header class="sticky top-0 z-50 backdrop-blur-xl bg-white/90 border-b border-slate-200/80 px-8 py-4 shadow-xs">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <div>
+                    <h1 class="text-base font-extrabold text-slate-900 tracking-tight flex items-center">
+                        Promo-Lens 
+                    </h1>
+                    <p class="text-xs text-slate-500">롯데홈쇼핑 프로모션 시뮬레이션</p>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto p-6 lg:p-8 space-y-6">
+        
+        <!-- Unified Top Hub: Intent Parser & Instant Chip Feedback -->
+        <section class="bg-white rounded-3xl p-6 lg:p-8 border border-slate-200/80 shadow-xl shadow-slate-200/50 relative overflow-hidden">
+            <div class="absolute top-0 right-0 w-64 h-64 bg-blue-50/50 rounded-full blur-3xl pointer-events-none"></div>
+            
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-3">
+                <div class="flex items-center space-x-2">
+                    <h2 class="text-base font-bold text-slate-900">Intent Parser </h2>
+                </div>
+            </div>
+
+            <div class="flex flex-col lg:flex-row gap-3 mb-3">
+                <div class="relative flex-grow">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400">
+                        <i class="fa-solid fa-wand-magic-sparkles text-blue-500"></i>
+                    </span>
+                    <input type="text" id="promptInput" 
+                           class="w-full bg-slate-50 border border-slate-200 rounded-2xl pl-11 pr-4 py-4 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all shadow-inner"
+                           value="가전 카테고리 할인율 20%로 세팅하고 예상 매출 200억 맞춰줘">
+                </div>
+                <button id="executeBtn" type="button" 
+                        class="bg-[#3182F6] hover:bg-blue-600 text-white font-semibold px-8 py-4 rounded-2xl transition-all duration-200 shadow-lg shadow-blue-500/25 flex items-center justify-center space-x-2 cursor-pointer active:scale-[0.98] shrink-0">
+                    <i class="fa-solid fa-play text-xs"></i>
+                    <span>실행</span>
+                </button>
+            </div>
+
+            <!-- Instant Parsing Chips -->
+            <div class="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100 text-xs">
+                <span class="text-slate-400 font-medium mr-1"><i class="fa-solid fa-tags mr-1"></i></span>
+                <span class="px-2.5 py-1 rounded-lg bg-blue-50 text-blue-600 font-semibold border border-blue-100">#카테고리: 가전</span>
+                <span id="chipDiscount" class="px-2.5 py-1 rounded-lg bg-red-50 text-red-600 font-semibold border border-red-100">#할인율: 20.0%</span>
+                <span id="chipRevenue" class="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-600 font-semibold border border-emerald-100">#목표매출: 20,000백만 원</span>
+            </div>
+        </section>
+
+        <!-- 2. Core Metrics Summary Cards -->
+        <section class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="bg-white border border-slate-200/80 p-6 rounded-3xl shadow-lg shadow-slate-200/40 relative overflow-hidden">
+                <div class="flex justify-between items-start">
+                    <p class="text-xs text-slate-400 font-bold uppercase tracking-wider">예상 마진율</p>
+                    <span class="p-2 rounded-xl bg-blue-50 text-blue-600 text-xs"><i class="fa-solid fa-percent"></i></span>
+                </div>
+                <p id="resMargin" class="text-4xl font-extrabold text-slate-900 mt-3 tracking-tight">-</p>
+                <div class="mt-2 text-xs text-slate-400">목표 기준 대비 안정적 범위</div>
+            </div>
+
+            <div class="bg-white border border-slate-200/80 p-6 rounded-3xl shadow-lg shadow-slate-200/40 relative overflow-hidden">
+                <div class="flex justify-between items-start">
+                    <p class="text-xs text-slate-400 font-bold uppercase tracking-wider">예상 순이익</p>
+                    <span class="p-2 rounded-xl bg-emerald-50 text-emerald-600 text-xs"><i class="fa-solid fa-won-sign"></i></span>
+                </div>
+                <p id="resProfit" class="text-4xl font-extrabold text-emerald-600 mt-3 tracking-tight">-</p>
+                <div class="mt-2 text-xs text-slate-400">판촉비 분담 합의 반영 완료</div>
+            </div>
+
+            <div id="riskCard" class="bg-white border border-slate-200/80 p-6 rounded-3xl shadow-lg shadow-slate-200/40 relative overflow-hidden transition-all duration-300">
+                <div class="flex justify-between items-start">
+                    <p class="text-xs text-slate-400 font-bold uppercase tracking-wider">역마진 가드레일 상태</p>
+                    <span id="riskIconBg" class="p-2 rounded-xl bg-purple-50 text-purple-600 text-xs"><i class="fa-solid fa-shield-halved"></i></span>
+                </div>
+                <p id="resRisk" class="text-3xl font-extrabold text-blue-600 mt-3 tracking-tight">-</p>
+                <div id="riskSubText" class="mt-2 text-xs text-slate-400">실시간 AI 감사 알고리즘 적용</div>
+            </div>
+        </section>
+
+        <!-- 3. Lower Grid: Controls & Visualizations -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            
+            <!-- Left Control Panel (4 Cols) -->
+            <section class="lg:col-span-4 bg-white rounded-3xl p-6 lg:p-8 border border-slate-200/80 shadow-xl shadow-slate-200/50 space-y-6">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-sliders text-blue-600"></i>
+                    <h3 class="text-sm font-bold text-slate-900">파라미터 세밀 조정</h3>
+                </div>
+                
+                <div class="space-y-5">
+                    <div class="space-y-2 bg-slate-50 p-4 rounded-2xl border border-slate-200/60">
+                        <div class="flex justify-between items-center text-xs">
+                            <span class="text-slate-600 font-semibold">프로모션 할인율</span>
+                            <span id="discountVal" class="font-bold text-blue-600 text-sm">15.0%</span>
+                        </div>
+                        <input type="range" id="discountSlider" min="5" max="30" step="0.5" value="15" 
+                               class="w-full accent-blue-600 bg-slate-200 h-2 rounded-lg cursor-pointer">
+                    </div>
+
+                    <div class="space-y-2 bg-slate-50 p-4 rounded-2xl border border-slate-200/60">
+                        <div class="flex justify-between items-center text-xs">
+                            <span class="text-slate-600 font-semibold">사은품 원가 단가</span>
+                            <span id="giftVal" class="font-bold text-indigo-600 text-sm">30,000 원</span>
+                        </div>
+                        <input type="range" id="giftSlider" min="0" max="70000" step="5000" value="30000" 
+                               class="w-full accent-indigo-600 bg-slate-200 h-2 rounded-lg cursor-pointer">
+                    </div>
+
+                    <div class="space-y-2 bg-slate-50 p-4 rounded-2xl border border-slate-200/60">
+                        <div class="flex justify-between items-center text-xs">
+                            <span class="text-slate-600 font-semibold">목표 예상 매출액</span>
+                            <span id="revenueVal" class="font-bold text-emerald-600 text-sm">15,000 백만 원</span>
+                        </div>
+                        <input type="range" id="revenueSlider" min="5000" max="50000" step="1000" value="15000" 
+                               class="w-full accent-emerald-600 bg-slate-200 h-2 rounded-lg cursor-pointer">
+                    </div>
+                </div>
+            </section>
+
+            <!-- Right Visualizations & Insights (8 Cols) -->
+            <section class="lg:col-span-8 space-y-6">
+                <!-- Chart Box -->
+                <div class="bg-white rounded-3xl p-6 lg:p-8 border border-slate-200/80 shadow-xl shadow-slate-200/50">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-sm font-bold text-slate-900 flex items-center">
+                            <i class="fa-solid fa-chart-column mr-2 text-blue-600"></i> 할인율 변동에 따른 매출 및 순이익 시뮬레이션 추이
+                        </h3>
+                    </div>
+                    <div class="relative h-72 w-full">
+                        <canvas id="simulationChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Auditor Briefing & RAG Match Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xl shadow-slate-200/50 flex flex-col justify-between">
+                        <div>
+                            <h3 class="text-sm font-bold text-blue-600 flex items-center mb-3">
+                                <i class="fa-solid fa-robot mr-2"></i> Auditor Agent 브리핑
+                            </h3>
+                            <div id="briefingBox" class="bg-slate-50 border border-slate-200/60 rounded-2xl p-4 text-xs text-slate-600 leading-relaxed min-h-[100px] flex items-center">
+                                자연어 기안을 입력하거나 슬라이더를 조작하면 AI 가드레일 코멘트가 여기에 출력됩니다.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xl shadow-slate-200/50 flex flex-col justify-between">
+                        <div>
+                            <div class="flex justify-between items-center mb-3">
+                                <h3 class="text-sm font-bold text-emerald-600 flex items-center">
+                                    <i class="fa-solid fa-database mr-2"></i> 유사 사례
+                                </h3>
+                                <button onclick="exportSAPPacket()" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-xl transition-all font-medium cursor-pointer flex items-center space-x-1.5 shadow-2xs">
+                                    <i class="fa-solid fa-download text-[10px]"></i>
+                                    <span>SAP 패킷</span>
+                                </button>
+                            </div>
+                            <div id="historicalBox" class="bg-slate-50 border border-slate-200/60 rounded-2xl p-4 text-xs font-mono text-slate-700 leading-relaxed min-h-[100px] flex items-center">
+                                매칭된 과거 베스트 프로모션 이력 및 RAG 인사이트가 표시됩니다.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+
+    </main>
+
+    <!-- JavaScript Logic with Dynamic Risk Feedback -->
+    <script>
+        let simChart = null;
+        let discountSlider, giftSlider, revenueSlider;
+        let lastPayload = null;
+
+        document.addEventListener("DOMContentLoaded", () => {
+            discountSlider = document.getElementById('discountSlider');
+            giftSlider = document.getElementById('giftSlider');
+            revenueSlider = document.getElementById('revenueSlider');
+
+            discountSlider.addEventListener('input', () => {
+                const val = parseFloat(discountSlider.value).toFixed(1);
+                document.getElementById('discountVal').innerText = val + '%';
+                document.getElementById('chipDiscount').innerText = '#할인율: ' + val + '%';
+                triggerDebouncedSimulation(false);
+            });
+
+            giftSlider.addEventListener('input', () => {
+                document.getElementById('giftVal').innerText = parseInt(giftSlider.value).toLocaleString() + ' 원';
+                triggerDebouncedSimulation(false);
+            });
+
+            revenueSlider.addEventListener('input', () => {
+                const val = parseInt(revenueSlider.value);
+                document.getElementById('revenueVal').innerText = val.toLocaleString() + ' 백만 원';
+                document.getElementById('chipRevenue').innerText = '#목표매출: ' + val.toLocaleString() + '백만 원';
+                triggerDebouncedSimulation(false);
+            });
+
+            const executeBtn = document.getElementById('executeBtn');
+            if (executeBtn) {
+                executeBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    runSimulation(true);
+                });
+            }
+
+            const ctx = document.getElementById('simulationChart').getContext('2d');
+            simChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['5%', '10%', '15% (현재)', '20%', '25%', '30%'],
+                    datasets: [
+                        {
+                            label: '예상 매출액 (백만 원)',
+                            data: [12000, 13500, 15000, 17200, 19500, 22000],
+                            backgroundColor: 'rgba(49, 130, 246, 0.8)',
+                            borderRadius: 6,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: '예상 순이익 (백만 원)',
+                            data: [4500, 4200, 3800, 3100, 2000, 900],
+                            backgroundColor: 'rgba(16, 185, 129, 0.8)',
+                            borderRadius: 6,
+                            yAxisID: 'y1'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { type: 'linear', position: 'left', grid: { color: 'rgba(0,0,0,0.04)' }, ticks: { color: '#64748b', font: { family: 'Pretendard' } } },
+                        y1: { type: 'linear', position: 'right', grid: { display: false }, ticks: { color: '#64748b', font: { family: 'Pretendard' } } },
+                        x: { grid: { display: false }, ticks: { color: '#64748b', font: { family: 'Pretendard' } } }
+                    },
+                    plugins: { 
+                        legend: { labels: { color: '#334155', font: { size: 11, family: 'Pretendard' }, boxWidth: 12 } } 
+                    }
+                }
+            });
+
+            runSimulation(true);
+        });
+
+        let debounceTimer;
+        function triggerDebouncedSimulation(includePrompt) {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => runSimulation(includePrompt), 300);
+        }
+
+        async function runSimulation(includePrompt) {
+            const promptInput = document.getElementById('promptInput');
+            const resMargin = document.getElementById('resMargin');
+            const resProfit = document.getElementById('resProfit');
+            const resRisk = document.getElementById('resRisk');
+            const briefingBox = document.getElementById('briefingBox');
+            const historicalBox = document.getElementById('historicalBox');
+
+            const payload = {
+                prompt: includePrompt && promptInput ? promptInput.value : "",
+                discount_pct: parseFloat(discountSlider.value),
+                gift_cost_won: parseFloat(giftSlider.value),
+                target_revenue_mil: parseFloat(revenueSlider.value)
+            };
+            lastPayload = payload;
+
+            if (briefingBox && includePrompt) {
+                briefingBox.innerHTML = `<div class="w-full text-center text-blue-600 animate-pulse"><i class="fa-solid fa-spinner fa-spin mr-2"></i>Intent Parser 에이전트가 자연어를 분석 중입니다...</div>`;
+            }
+
+            try {
+                const res = await fetch('/api/v1/promotions/simulate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                const m = data.metrics;
+
+                if (includePrompt && m.parsed_discount !== undefined) {
+                    discountSlider.value = m.parsed_discount;
+                    document.getElementById('discountVal').innerText = m.parsed_discount.toFixed(1) + '%';
+                    document.getElementById('chipDiscount').innerText = '#할인율: ' + m.parsed_discount.toFixed(1) + '%';
+                }
+                if (includePrompt && m.parsed_revenue !== undefined) {
+                    revenueSlider.value = m.parsed_revenue;
+                    document.getElementById('revenueVal').innerText = m.parsed_revenue.toLocaleString() + ' 백만 원';
+                    document.getElementById('chipRevenue').innerText = '#목표매출: ' + m.parsed_revenue.toLocaleString() + '백만 원';
+                }
+
+                if (resMargin) resMargin.innerText = m.calculated_margin_pct + '%';
+                if (resProfit) resProfit.innerText = m.net_profit_mil.toLocaleString() + ' 백만 원';
+                
+                // 역마진 위험 상태에 따른 동적 UI 변화 (Dynamic Risk Feedback)
+                const riskCard = document.getElementById('riskCard');
+                const riskIconBg = document.getElementById('riskIconBg');
+                const riskSubText = document.getElementById('riskSubText');
+
+                if (resRisk) {
+                    resRisk.innerText = m.risk_level;
+                    if (m.risk_level === "SAFE") {
+                        resRisk.className = "text-3xl font-extrabold text-blue-600 mt-3 tracking-tight";
+                        riskCard.className = "bg-white border border-slate-200/80 p-6 rounded-3xl shadow-lg shadow-slate-200/40 relative overflow-hidden transition-all duration-300";
+                        riskIconBg.className = "p-2 rounded-xl bg-purple-50 text-purple-600 text-xs";
+                        riskSubText.innerText = "안정적";
+                    } else {
+                        resRisk.className = "text-3xl font-extrabold text-red-500 mt-3 tracking-tight animate-bounce";
+                        riskCard.className = "bg-red-50/80 border border-red-200 p-6 rounded-3xl shadow-xl shadow-red-500/20 relative overflow-hidden transition-all duration-300 ring-2 ring-red-400/50";
+                        riskIconBg.className = "p-2 rounded-xl bg-red-100 text-red-600 text-xs";
+                        riskSubText.innerText = "역마진 가드레일 위반";
+                    }
+                }
+
+                if (briefingBox) {
+                    briefingBox.innerHTML = `<div><p class="font-bold text-slate-900 mb-1 flex items-center"><i class="fa-solid fa-circle-info text-blue-600 mr-1.5"></i> Auditor Agent 가드레일 코멘트</p><p class="text-slate-600 leading-relaxed">${m.ai_briefing}</p></div>`;
+                }
+                if (historicalBox) {
+                    historicalBox.innerHTML = `
+                        <div class="space-y-1.5 w-full">
+                            <div>• <b>유사 사례:</b> ${m.historical_match.case_name}</div>
+                            <div>• <b>RAG 유사도:</b> <span class="text-emerald-600 font-bold">${m.historical_match.similarity_score}</span></div>
+                            <div>• <b>과거 실적 매출:</b> ${m.historical_match.past_revenue.toLocaleString()} 백만 원</div>
+                            <div class="text-slate-500 italic mt-1">"${m.historical_match.insight}"</div>
+                        </div>
+                    `;
+                }
+
+                if (simChart) {
+                    const currentDisc = parseFloat(discountSlider.value);
+                    const currentRev = parseFloat(revenueSlider.value);
+                    
+                    simChart.data.labels = [
+                        `${Math.max(0, currentDisc - 10).toFixed(1)}%`, 
+                        `${Math.max(0, currentDisc - 5).toFixed(1)}%`, 
+                        `${currentDisc.toFixed(1)}% (현재)`, 
+                        `${(currentDisc + 5).toFixed(1)}%`, 
+                        `${(currentDisc + 10).toFixed(1)}%`
+                    ];
+                    
+                    simChart.data.datasets[0].data = [
+                        currentRev * 0.8,
+                        currentRev * 0.9,
+                        currentRev,
+                        currentRev * 1.15,
+                        currentRev * 1.3
+                    ];
+                    simChart.data.datasets[1].data = [
+                        currentRev * (m.calculated_margin_pct + 4) / 100,
+                        currentRev * (m.calculated_margin_pct + 2) / 100,
+                        m.net_profit_mil,
+                        currentRev * (m.calculated_margin_pct - 3) / 100,
+                        currentRev * (m.calculated_margin_pct - 6) / 100
+                    ];
+                    simChart.update();
+                }
+
+            } catch (err) {
+                console.error("시뮬레이션 통신 오류:", err);
+                if (briefingBox) {
+                    briefingBox.innerHTML = `<span class="text-red-500">오류 발생: 서버 통신 상태를 확인해주세요.</span>`;
+                }
+            }
+        }
+
+        function exportSAPPacket() {
+            if (!lastPayload) {
+                alert("먼저 시뮬레이션을 실행해 주세요");
+                return;
+            }
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(lastPayload, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `lotte_promo_sap_packet_${Date.now()}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+        }
+    </script>
+</body>
+</html>
