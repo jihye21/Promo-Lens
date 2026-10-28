@@ -64,8 +64,10 @@ col_chart1, col_chart2 = st.columns(2)
 
 with col_chart1:
     st.subheader("요일별 예상 매출 추이")
+
+    days_order = ['월', '화', '수', '목', '금', '토', '일']
     chart_data = pd.DataFrame({
-        '요일': ['월', '화', '수', '목', '금', '토', '일'],
+        '요일': days_order,
         '예상 매출 (백만 원)': [
             sim_result['predicted_revenue'] * 0.1,
             sim_result['predicted_revenue'] * 0.12,
@@ -76,6 +78,9 @@ with col_chart1:
             sim_result['predicted_revenue'] * 0.14
         ]
     })
+    chart_data['요일'] = pd.Categorical(chart_data['요일'], categories=days_order, ordered=True)
+    chart_data = chart_data.sort_values('요일')
+    
     st.bar_chart(chart_data.set_index('요일'))
 
 with col_chart2:
