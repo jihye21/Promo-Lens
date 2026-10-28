@@ -16,7 +16,7 @@ if "target_category" not in st.session_state:
 if "discount_rate" not in st.session_state:
     st.session_state.discount_rate = 7
 if "gift_type" not in st.session_state:
-    st.session_state.gift_type = "고급 보온 병 (단가: 1.5만)"
+    st.session_state.gift_type = "고급 보온병 (단가: 1.5만)"
 if "target_revenue" not in st.session_state:
     st.session_state.target_revenue = 500
     
