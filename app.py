@@ -10,7 +10,7 @@ st.set_page_config(
     layout="wide"
 )
 
-//세션 상태 초기화
+#세션 상태 초기화
 if "target_category" not in st.session_state:
     st.session_state.target_category = "겨울 패딩/의류"
 if "discount_rate" not in st.session_state:
